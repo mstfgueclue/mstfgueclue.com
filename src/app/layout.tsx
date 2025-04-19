@@ -12,8 +12,9 @@ const tankerRegular = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "mstfgueclue.dev - Mustafa Gueclue",
-  description: "A software engineer",
+  title: "mstfgueclue.com - Mustafa Gueclue",
+  description:
+    "A software engineer sharing architecture patterns, development tips and experiments.",
 };
 
 export default function RootLayout({
