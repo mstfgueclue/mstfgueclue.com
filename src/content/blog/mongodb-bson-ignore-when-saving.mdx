@@ -1,0 +1,80 @@
+export const metadata = {
+    title: "Wie man Properties beim Schreiben in MongoDB ignoriert",
+    description: "Mit einer eigenen MongoDB Convention und einem benutzerdefinierten Attribut lassen sich Properties von der Serialisierung beim Schreiben ausschließen.",
+    date: "2025-02-25",
+    tags: ["MongoDB", ".NET", "C#", "Best Practices", "Clean Architecture"]
+};
+
+Beim Arbeiten mit MongoDB und dem offiziellen C# Driver bin ich auf ein Verhalten gestoßen, das im ersten Moment unerwartet war:
+
+> Properties, die während des Lesevorgangs aus anderen Quellen befüllt wurden (z. B. durch Aggregation), wurden beim Speichern des Dokuments wieder mit in die Datenbank geschrieben – obwohl sie ursprünglich nicht Bestandteil des gespeicherten Dokuments waren.
+
+Das kann zu inkonsistenten oder redundanten Daten führen. Die Lösung: Eine eigene **Convention** in Kombination mit einem benutzerdefinierten **Attribut**, das explizit markiert, welche Properties *nicht* gespeichert werden sollen.
+
+---
+
+## 🛠️ 1. Das Attribut `BsonIgnoreWhenSaving` & die Convention
+
+```csharp
+[AttributeUsage(AttributeTargets.Property)]
+public class BsonIgnoreWhenSavingAttribute : Attribute
+{
+}
+
+public class IgnoreWhenSavingConvention : ConventionBase, IMemberMapConvention
+{
+    public void Apply(BsonMemberMap memberMap)
+    {
+        if (memberMap.MemberInfo.GetCustomAttributes(typeof(BsonIgnoreWhenSavingAttribute), false).Any())
+        {
+            // verhindert die Serialisierung beim Schreiben
+            memberMap.SetShouldSerializeMethod(_ => false);
+        }
+    }
+}
+```
+
+## 🧩 2. Registrierung der Convention beim App Startup
+Die Convention wird beim Start der Anwendung registriert – z. B. innerhalb deiner Infrastructure-Schicht:
+
+```c#
+private static void RegisterMongoDBConventions()
+{
+    ConventionRegistry.Register(
+        nameof(CamelCaseElementNameConvention),
+        new ConventionPack { new CamelCaseElementNameConvention() },
+        _ => true
+    );
+
+    ConventionRegistry.Register(
+        nameof(IgnoreWhenSavingConvention),
+        new ConventionPack { new IgnoreWhenSavingConvention() },
+        _ => true
+    );
+}
+
+private static void AddMongoDB(this IServiceCollection services)
+{
+    services.AddSingleton<MongoDbService>();
+    RegisterMongoDBConventions();
+}
+```
+
+## ✅ 3. Anwendung des Attributs
+Nun kann das Attribut auf beliebige Properties gesetzt werden, die beim Schreiben ignoriert werden sollen:
+```c#
+public class TransactionReport : BaseEntity
+{
+    [BsonRepresentation(BsonType.ObjectId)]
+    public required string CustomerId { get; set; }
+
+    [BsonIgnoreWhenSaving]
+    public CustomerDetails? Customer { get; set; }
+
+    [BsonRepresentation(BsonType.ObjectId)]
+    public required string AccountId { get; set; }
+
+    [BsonIgnoreWhenSaving]
+    public AccountDetails? Account { get; set; }
+}
+```
