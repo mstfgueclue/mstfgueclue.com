@@ -53,7 +53,7 @@ export default async function BlogPost({ params }: Props) {
       <h1>{post.title}</h1>
       {post.date && (
         <time dateTime={post.date} className="text-gray-500">
-          {new Date(post.date).toLocaleDateString()}
+          {new Date(post.date).toISOString().split("T")[0]}
         </time>
       )}
       <div className="mt-8">

@@ -32,7 +32,7 @@ export async function BlogSection() {
                 dateTime={post.date}
                 className="text-gray-400 text-sm font-medium"
               >
-                {new Date(post.date).toLocaleDateString()}
+                {new Date(post.date).toISOString().split("T")[0]}
               </time>
             )}
             {post.description && (
