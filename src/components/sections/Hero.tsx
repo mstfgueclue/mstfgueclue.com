@@ -8,12 +8,16 @@ export function Hero() {
       <div className="px-6 pb-20 pt-20 sm:pt-60 lg:px-8 lg:pt-32">
         <div className="mx-auto max-w-2xl overflow-hidden">
           <div className="flex flex-col lg:flex-row lg:max-w-none gap-12 items-center justify-center">
-            <h1 className="font-decoration uppercase -skew-y-6 text-8xl px-8">
+            <h1 className="font-decoration uppercase -skew-y-6 text-5xl sm:text-6xl md:text-7xl lg:text-8xl px-8 text-center sm:text-left">
               verstehen.
               <br />
-              <span className="-translate-x-8 inline-block">entwickeln.</span>
+              <span className="-translate-x-4 sm:-translate-x-6 md:-translate-x-8 inline-block">
+                entwickeln.
+              </span>
               <br />
-              <span className="translate-x-12 inline-block">vermitteln.</span>
+              <span className="translate-x-4 sm:translate-x-8 md:translate-x-12 inline-block">
+                vermitteln.
+              </span>
               <br />
             </h1>
             <div>

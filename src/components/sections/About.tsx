@@ -23,7 +23,7 @@ export function About() {
             </a>
           </div>
         </div>
-        <div className="relative lg:-top-24 hidden lg:flex">
+        <div className="relative lg:-top-24 flex justify-center md:justify-start">
           <ContactCard />
         </div>
       </div>
