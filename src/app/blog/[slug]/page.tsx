@@ -1,12 +1,39 @@
+import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getPostBySlug } from "../../../lib/content-utils";
+import { getAllPostsMeta, getPostBySlug } from "../../../lib/content-utils";
 
-export default async function BlogPost({
-  params,
-}: {
-  params: { slug: string };
-}) {
-  const post = await getPostBySlug(params.slug);
+// https://nextjs.org/docs/app/api-reference/functions/generate-metadata#generatemetadata-function
+type Props = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
+
+// generate static params for all posts
+export async function generateStaticParams() {
+  const posts = await getAllPostsMeta();
+  return posts.map((post) => ({ slug: post.slug }));
+}
+
+// generate metadata for the page
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+
+  const post = await getPostBySlug(slug);
+
+  if (!post) {
+    return { title: "Post Not Found" };
+  }
+
+  return {
+    title: post.title,
+    description: post.description || `Read ${post.title}`,
+  };
+}
+
+export default async function BlogPost({ params }: Props) {
+  const { slug } = await params;
+
+  const post = await getPostBySlug(slug);
 
   if (!post) {
     notFound();
@@ -14,7 +41,7 @@ export default async function BlogPost({
 
   let MDXContent;
   try {
-    const module = await import(`../../../content/blog/${params.slug}.mdx`);
+    const module = await import(`../../../content/blog/${slug}.mdx`);
     MDXContent = module.default;
   } catch (e) {
     console.error("Failed to load MDX content:", e);
