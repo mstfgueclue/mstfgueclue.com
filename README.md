@@ -1,12 +1,15 @@
-This is my personal website, built with [Next.js](https://nextjs.org/) and [TypeScript](https://www.typescriptlang.org/). It serves as a digital space where I share my experiences, findings, and thoughts around software engineering, architecture and tech-related topics.
+# mstfgueclue.com
+
+This is my personal website, built with [Next.js](https://nextjs.org/) and [TypeScript](https://www.typescriptlang.org/). It serves as a digital space where I share my experiences, findings and thoughts around software engineering, architecture and tech-related topics.
 
 ## Features
 
 - Built with **Next.js 14**
 - Written in **TypeScript**
-- Blog powered by **MDX**
+- Blog powered by **MDX** (`@mdx-js/react`, `@next/mdx`)
 - Styled using **Tailwind CSS**
-- Markdown content parsing with `gray-matter`, `shikiji` and `rehype-pretty-code`
+- Enhanced typography via **@tailwindcss/typography**
+- Icons provided by **Lucide React**
 
 ## Getting Started 
 First, install dependencies:
