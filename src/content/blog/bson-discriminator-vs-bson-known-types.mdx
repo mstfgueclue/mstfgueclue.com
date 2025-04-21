@@ -5,7 +5,6 @@ export const metadata = {
     tags: ["MongoDB", ".NET", "C#", "Best Practices", "Clean Architecture"]
 }
 
-# BsonDiscriminator vs. BsonKnownTypes in MongoDB mit .NET
 In vielen modernen .NET-Projekten mit MongoDB als Datenbank stößt man früher oder später auf das Bedürfnis, **polymorphe Klassenhierarchien** abzubilden. Eine häufige Herausforderung: Wie kann MongoDB erkennen, welchen konkreten Typ eine Instanz einer abstrakten Klasse zur Laufzeit hat?
 
 Zwei zentrale Mechanismen des **MongoDB .NET-Treibers** kommen hier zum Einsatz: `[BsonDiscriminator]` und `[BsonKnownTypes]`. In diesem Beitrag erkläre ich, wie sie funktionieren, wann man sie einsetzt und welches Vorgehen sich in der Praxis bewährt hat.
