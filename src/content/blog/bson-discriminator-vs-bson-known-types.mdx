@@ -1,0 +1,90 @@
+export const metadata = {
+    title: "BsonDiscriminator vs. BsonKnownTypes in MongoDB mit .NET",
+    description: "Ein praxisorientierter Vergleich zwischen BsonDiscriminator und BsonKnownTypes in MongoDB für polymorphe Klassenhierarchien in .NET-Anwendungen.",
+    date: "2025-02-20",
+    tags: ["MongoDB", ".NET", "C#", "Best Practices", "Clean Architecture"]
+}
+
+# BsonDiscriminator vs. BsonKnownTypes in MongoDB mit .NET
+In vielen modernen .NET-Projekten mit MongoDB als Datenbank stößt man früher oder später auf das Bedürfnis, **polymorphe Klassenhierarchien** abzubilden. Eine häufige Herausforderung: Wie kann MongoDB erkennen, welchen konkreten Typ eine Instanz einer abstrakten Klasse zur Laufzeit hat?
+
+Zwei zentrale Mechanismen des **MongoDB .NET-Treibers** kommen hier zum Einsatz: `[BsonDiscriminator]` und `[BsonKnownTypes]`. In diesem Beitrag erkläre ich, wie sie funktionieren, wann man sie einsetzt und welches Vorgehen sich in der Praxis bewährt hat.
+
+## BsonDiscriminator
+Das Attribut `[BsonDiscriminator]` wird verwendet, um abgeleitete Typen zu kennzeichnen und ihnen einen speziellen Namen zu geben, der beim Speichern der Instanzen in MongoDB verwendet wird. Dies hilft dabei, bei der Deserialisierung zwischen verschiedenen abgeleiteten Typen zu unterscheiden.
+
+**Wann verwenden?**
+- Nur auf der Rootklasse (z. B. `InventoryItem`) anwenden. Abstrakte Zwischenschichten benötigen dieses Attribut nicht, es sei denn, man möchte ihr Verhalten speziell anpassen.
+
+- Kein Bedarf für `[BsonKnownTypes]`, wenn man die abgeleiteten Klassen explizit mit `[BsonDiscriminator]` annotiert.
+
+Der Vorteil der Verwendung von `[BsonDiscriminator]` auf den abgeleiteten Klassen ist, dass es eine klarere und wartungsfreundlichere Lösung darstellt, da keine zusätzliche Registrierung der Typen erforderlich ist.
+
+```c#
+[BsonDiscriminator(Required = true)]
+public abstract class InventoryItem : BaseEntity
+{
+}
+
+public abstract class ProductInventoryItem : InventoryItem
+{
+}
+
+[BsonDiscriminator("SpecificProduct")]
+public class SpecificProduct : ProductInventoryItem
+{
+}
+
+[BsonDiscriminator("GenericProduct")]
+public class GenericProduct : ProductInventoryItem
+{
+}
+
+[BsonDiscriminator("CalculatedInventoryItem")]
+public abstract class CalculatedInventoryItem : InventoryItem
+{
+}
+```
+In diesem Beispiel ist die Klasse `InventoryItem` die abstrakte Rootklasse und die abgeleiteten Klassen wie `SpecificProduct` und `GenericProduct` haben jeweils einen eigenen Discriminator-Wert, der beim Speichern in MongoDB verwendet wird. Die abstrakte Zwischenklasse `ProductInventoryItem` benötigt das Attribut nicht.
+
+## BsonKnownTypes
+Das Attribut `[BsonKnownTypes]` wird verwendet, um die abgeleiteten Typen auf der Basis- oder Zwischenklasse zu registrieren, ohne dass jede abgeleitete Klasse explizit mit einem `[BsonDiscriminator]`-Attribut versehen werden muss. Dies kann nützlich sein, wenn man die Typen dynamisch entdecken möchte, ohne sie manuell angeben zu müssen.
+
+**Wann verwenden?**
+- Wenn man nicht jede abgeleitete Klasse mit `[BsonDiscriminator]` kennzeichnen möchte.
+
+- Wenn man möchte, dass die Basisklasse oder eine Zwischenklasse alle abgeleiteten Typen automatisch für die Laufzeit-Polymorphie registriert.
+
+Das `[BsonKnownTypes]`-Attribut ist besonders hilfreich, wenn man eine Basis- oder Zwischenklasse hat, die die Typen nicht selbständig kennt und man die Registrierung der Typen zentralisieren möchte.
+
+```c#
+[BsonKnownTypes(typeof(ProductInventoryItem))]
+[BsonKnownTypes(typeof(CalculatedInventoryItem))]
+public abstract class InventoryItem : BaseEntity
+{
+}
+
+[BsonKnownTypes(typeof(SpecificProduct))]
+[BsonKnownTypes(typeof(GenericProduct))]
+public abstract class ProductInventoryItem : InventoryItem
+{
+}
+
+public class SpecificProduct : ProductInventoryItem
+{
+}
+
+public class GenericProduct : ProductInventoryItem
+{
+}
+```
+
+In diesem Beispiel wird durch das Hinzufügen des `[BsonKnownTypes]`-Attributs auf der abstrakten Basisklasse `InventoryItem` und der abstrakten Zwischenklasse `ProductInventoryItem` sichergestellt, dass alle abgeleiteten Typen wie `SpecificProduct` und `GenericProduct` für MongoDB erkannt werden, ohne dass sie einzeln mit `[BsonDiscriminator]` annotiert werden müssen.
+
+## Wann sollte man welches Attribut verwenden?
+**Verwendung von** `[BsonDiscriminator]`: Wenn du explizit die Namen der abgeleiteten Typen steuern möchtest und diese auf jeder abgeleiteten Klasse individuell definieren möchtest. Diese Methode ist sauberer und wartungsfreundlicher, wenn man Kontrolle über die **Discriminator** haben möchte.
+
+**Verwendung von** `[BsonKnownTypes]`: Wenn du eine Basisklasse hast und möchtest, dass alle abgeleiteten Typen automatisch registriert werden, ohne sie explizit mit `[BsonDiscriminator]` zu versehen. Dies ist besonders nützlich, wenn du **dynamische Discriminatoren** benötigst.
+
+## Fazit
+Die Wahl zwischen `[BsonDiscriminator]` und `[BsonKnownTypes]` hängt von deinen spezifischen Anforderungen ab. Wenn du maximale Kontrolle über den Discriminator-Wert und die Typenbezeichner haben möchtest, ist `[BsonDiscriminator]` die beste Wahl. Wenn du jedoch eine zentralisierte und automatische Registrierung aller abgeleiteten Typen wünschst, ist `[BsonKnownTypes]` die praktikable Lösung.
