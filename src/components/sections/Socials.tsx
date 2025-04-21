@@ -29,10 +29,10 @@ export function Socials() {
           <p>
             Oder schreib an{" "}
             <a
-              href='mailto:"Mustafa Gueclue" hi@mstfgueclue.dev'
+              href='mailto:"Mustafa Gueclue" hi@mstfgueclue.com'
               className="font-semibold text-indigo-500 inline-flex gap-1 items-center"
             >
-              <span>hi@mstfgueclue.dev</span>
+              <span>hi@mstfgueclue.com</span>
               <ArrowUpRight />
             </a>
           </p>

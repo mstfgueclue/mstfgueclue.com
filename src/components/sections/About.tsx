@@ -15,7 +15,7 @@ export function About() {
           </p>
           <div>
             <a
-              href='mailto:"Mustafa Gueclue" hi@mstfgueclue.dev'
+              href='mailto:"Mustafa Gueclue" hi@mstfgueclue.com'
               className="font-semibold text-indigo-500 inline-flex gap-1 items-center"
             >
               <span>Schreib mir per Mail</span>
