@@ -1,0 +1,71 @@
+export const metadata = {
+  title: "Erstellung eines generischen Repositories in .NET mit MongoDB",
+  description:
+    "In diesem Beitrag erkläre ich, wie man ein generisches Repository in .NET erstellt, das eine Methode zur Zählung von Dokumenten basierend auf einem Filterausdruck umfasst. Außerdem zeige ich, wie man diese Methode in abgeleiteten Repositories verwendet.",
+  date: "2025-03-02",
+  tags: ["MongoDB", ".NET", "C#", "Best Practices", "Clean Architecture"],
+};
+
+In modernen .NET-Anwendungen, die MongoDB als Datenbank verwenden, ist es eine gute Praxis, ein generisches Repository zu implementieren, um die Wiederverwendbarkeit und Wartbarkeit des Codes zu verbessern. In diesem Beitrag zeige ich, wie man ein solches Repository erstellt, das eine Methode zur Zählung von Dokumenten mit und ohne Filter bietet. Diese Methode wird in allen abgeleiteten Repositories verwendet, wodurch Code-Duplizierung vermieden wird.
+
+## 1. Das Basis-Repository
+
+Wir beginnen mit der Definition eines generischen `BaseRepository`, das grundlegende CRUD-Operationen wie `Create`, `Read`, `Update` und `Delete` enthält. Außerdem fügen wir eine Methode zur Zählung von Dokumenten hinzu, die einen Filterausdruck akzeptiert. Die Zählung kann entweder mit einem spezifischen Filter oder ohne Filter durchgeführt werden.
+
+```csharp
+public class BaseRepository<T>(IMongoCollection<T> collection, ILogger<BaseRepository<T>> logger) where T : class
+{
+    protected readonly IMongoCollection<T> _collection = collection;
+    private readonly ILogger<BaseRepository<T>> _logger = logger;
+
+    // Zählung von Dokumenten mit einem Filterausdruck
+    public async Task<long> CountAsync(Expression<Func<T, bool>> filterExpression, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation($"Counting {typeof(T).Name} documents with filter");
+
+        return await _collection.CountDocumentsAsync(filterExpression, cancellationToken: cancellationToken);
+    }
+}
+```
+
+**Erklärung**:
+
+- `_collection`: Repräsentiert die MongoDB-Kollektion für die Entität `T`.
+
+- `CountAsync`: Diese Methode zählt die Dokumente in der MongoDB-Kollektion, die dem angegebenen Filter entsprechen. Wenn kein Filter angegeben wird, kann der Filter auf `x => true` gesetzt werden, was bedeutet, dass alle Dokumente gezählt werden.
+
+## 2. Das abgeleitete Repository
+
+Nun erstellen wir ein abgeleitetes Repository für eine spezifische Entität, z. B. `ProductRepository`. Dieses Repository kann die `CountAsync`-Methode des `BaseRepository` erben und verwenden.
+
+```csharp
+public class ProductRepository(IMongoCollection<Product> collection, ILogger<ProductRepository> logger) : BaseRepository<Product>(collection, logger)
+{
+    public async Task<long> GetCountByProductIdAsync(string productId, CancellationToken cancellationToken)
+    {
+        // Zählen mit einem Filter (z. B. nach Produkt-ID)
+        return await _productRepository.CountAsync(x => x.ProductId == productId, cancellationToken);
+    }
+
+    public async Task<long> GetAllCountAsync(CancellationToken cancellationToken)
+    {
+        // Zählen ohne Filter (alle Produkte zählen)
+        return await CountAsync(x => true, cancellationToken);
+    }
+
+    // Weitere produktbezogene Methoden können hier hinzugefügt werden
+}
+```
+
+In diesem Beispiel erbt das `ProductRepository` die Funktionalität des `BaseRepository`, einschließlich der Zählmethode. Es ist einfach, neue spezifische Repositories zu erstellen, die dieselbe Methode für die Zählung von Dokumenten verwenden.
+
+**Erklärung**:
+
+- `Zählen mit Filter`: Hier wird die `CountAsync`-Methode mit einem spezifischen Filter verwendet, um die Anzahl der Produkte mit einer bestimmten ID zu zählen.
+- `Zählen ohne Filter`: Wenn der Filter `x => true` gesetzt wird, zählen wir alle Dokumente in der `Product`-Kollektion.
+
+## 4. Fazit
+
+Das Erstellen eines generischen Repositories, das grundlegende Funktionen wie das Zählen von Dokumenten bietet, ist eine sehr nützliche Technik für die Wiederverwendbarkeit und die Vereinheitlichung des Codes in einer .NET-Anwendung. Durch die Verwendung von `Expression<Func<T, bool>>` als Filterausdruck ist die Flexibilität erhöht und die Methode kann in verschiedenen Szenarien wiederverwendet werden.
+
+Die Methode `CountAsync` aus dem `BaseRepository` kann problemlos in verschiedenen abgeleiteten Repositories wie `ProductRepository` oder `CustomerRepository` verwendet werden, ohne dass redundanter Code geschrieben werden muss. Dies trägt zur Wartbarkeit und Klarheit des Codes bei, was besonders in größeren Anwendungen von Vorteil ist.
