@@ -1,0 +1,85 @@
+export const metadata = {
+    title: "Return of Unit: Warum dein Validator nicht ausgeführt wird",
+    description: "Ein praktischer Leitfaden, warum dein MediatR-Validator möglicherweise nicht triggert und wie du es mit Unit richtig machst.",
+    date: "2025-03-16",
+    tags: [".NET", "C#", "MediatR", "Best Practices", "Clean Architecture"]
+}
+
+In einem meiner letzten Projekte bin ich über ein Verhalten gestolpert, das zunächst seltsam erschien: Der **FluentValidation-Validator** für einen MediatR-Command wurde **nicht ausgeführt**, obwohl alles korrekt implementiert schien. Die Ursache? Eine Kleinigkeit mit großer Wirkung: **Der Command hatte keinen Rückgabewert.**
+
+## 1. Das Problem
+Stellen wir uns folgenden Command vor:
+
+```csharp
+public class SomeCommand : IRequest
+{
+    public string SomeProperty { get; set; }
+}
+```
+Und den zugehörigen Validator:
+
+```csharp
+public class SomeCommandValidator : AbstractValidator<SomeCommand>
+{
+    public SomeCommandValidator()
+    {
+        RuleFor(x => x.SomeProperty).NotEmpty();
+    }
+}
+```
+Der Handler sah so aus:
+
+```csharp
+public class SomeCommandHandler : IRequestHandler<SomeCommand>
+{
+    public Task Handle(SomeCommand request, CancellationToken cancellationToken)
+    {
+        // ... Business Logik ...
+        return Task.CompletedTask;
+    }
+}
+```
+Alles scheint korrekt und doch wird der Validator **nicht aufgerufen.**
+
+## 2. Die Ursache: Kein Rückgabewert
+Wenn ein Command `IRequest` implementiert (ohne generischen Typ), geht MediatR davon aus, dass **kein Rückgabewert erwartet** wird und überspringt dabei stillschweigend die Validierung. Erst wenn `IRequest<Unit>` verwendet wird, greift die Validierung wie erwartet:
+
+```csharp
+public class SomeCommand : IRequest<Unit>
+{
+    public string SomeProperty { get; set; }
+}
+```
+```csharp
+public class SomeCommandHandler : IRequestHandler<SomeCommand, Unit>
+{
+    public Task<Unit> Handle(SomeCommand request, CancellationToken cancellationToken)
+    {
+        // ... Business Logik ...
+        return Task.FromResult(Unit.Value);
+    }
+}
+```
+### Warum `Unit`?
+`Unit` ist ein spezieller Rückgabetyp, der als Ersatz für `void` dient, wenn man trotzdem einen Wert benötigt (z.B. für generische Constraints). Mit `Unit` erzwingst du die Struktur, die MediatR benötigt, um die Pipeline, inklusive Validatoren, korrekt zu durchlaufen.
+
+## 3. Zweite Falle: Zugriffsmodifizierer
+Ein weiterer häufiger Stolperstein ist die Sichtbarkeit des Validators. Ist dein Validator `internal` statt `public`, wird er von der Dependency Injection nicht gefunden:
+
+```csharp
+// FALSCH – Validator wird nicht gefunden
+internal class SomeCommandValidator : AbstractValidator<SomeCommand> { ... }
+
+// RICHTIG – Validator wird erkannt
+public class SomeCommandValidator : AbstractValidator<SomeCommand> { ... }
+```
+In einer typischen Clean Architecture, bei der die Validators in einem separaten Projekt (z. B. Application Layer) liegen, ist es wichtig, dass alle benötigten Klassen `öffentlich` deklariert sind.
+
+## 4. Fazit
+Zwei kleine Details, **der Rückgabewert** `Unit` und **die Sichtbarkeit** `public`, entscheiden darüber, ob dein Validator ausgeführt wird oder nicht. Wenn du mit MediatR arbeitest, stelle sicher:
+
+ - Dein Command implementiert `IRequest<Unit>`
+ - Dein Handler gibt `Unit.Value` zurück
+ - Dein Validator ist `public`
+
+Diese kleinen, aber essenziellen Best Practices helfen dir dabei, robuste und valide Anwendungsschichten zu entwickeln.
